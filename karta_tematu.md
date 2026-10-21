@@ -5,7 +5,7 @@ share_updated: 2026-09-27T09:38:22+02:00
 
 # Karta zgłoszenia tematu projektu
 
-**Grupa:** L3 (niestacjonarna) / L2 (stacjonarna) — zostawcie właściwe **Data zgłoszenia:**
+**Grupa:** L2 (stacjonarna) **Data zgłoszenia:** 21.10.2026
 
 ---
 
@@ -57,16 +57,16 @@ Nie da się tu napisać prostych reguł if-else, bo pojedyncze słowa w finansac
 - [ ] inne:
 
 _Dlaczego akurat ta technologia pasuje do tego problemu, 2–3 zdania:_
-Chcemy przyporządkować każdy nagłówek do jednej z trzech klas na podstawie gotowej bazy przykładów, do czego najlepiej nadaje się zwykła klasyfikacja. Proste algorytmy uczenia maszynowego połączone z wektoryzacją tekstu dobrze łapią powtarzające się zwroty w krótkich newsach
+Chcemy przyporządkować każdy nagłówek do jednej z trzech klas na podstawie gotowej bazy przykładów, do czego najlepiej nadaje się zwykła klasyfikacja. Ponieważ pojedynczy perceptron rozróżnia tylko dwie klasy, użyjemy trzech perceptronów w układzie „jedna klasa kontra reszta”. Proste algorytmy uczenia maszynowego połączone z wektoryzacją tekstu dobrze łapią powtarzające się zwroty w krótkich newsach
 
 ## 6. Dane
 
-|                             |                                                                            |
-| --------------------------- | -------------------------------------------------------------------------- |
-| Źródło                      | https://huggingface.co/datasets/takala/financial_phrasebank                |
-| Rozmiar i format            | 4840 zdań o temacie finansów w języku angielskim (699 kB), format json/csv |
-| Czy są już dostępne?        | tak                                                                        |
-| Jeśli nie — plan pozyskania |                                                                            |
+|                             |                                                                                         |
+| --------------------------- | --------------------------------------------------------------------------------------- |
+| Źródło                      | https://huggingface.co/datasets/takala/financial_phrasebank (wariant sentences_75agree) |
+| Rozmiar i format            | 3453 zdań o temacie finansów w języku angielskim (699 kB), format json/csv              |
+| Czy są już dostępne?        | tak                                                                                     |
+| Jeśli nie — plan pozyskania |                                                                                         |
 
 ## 7. Stos technologiczny
 
@@ -76,12 +76,12 @@ Python, numpy, pandas, scikit-learn, matplotlib/seaborn
 ## 8. Kryterium sukcesu
 
 _Po czym poznamy, że projekt działa. Jaka metryka, jaki próg. Liczba, nie deklaracja._
-Chcemy osiągnąć co najmniej 75% trafności (Accuracy) na zbiorze testowym i uzyskać wynik lepszy niż dwa proste podejścia: wybieranie zawsze najczęstszej klasy neutralnej, ktora stanowi 60% zbioru, oraz zwykłe zliczanie słów kluczowych ze słownika. Do tego wygenerujemy macierz pomyłek i opisujemy, które klasy najczęściej się ze sobą mylą
+Chcemy osiągnąć co najmniej 75% trafności (Accuracy) na zbiorze testowym oraz wynik F1 uśredniony po klasach (macro-F1) powyżej 0.65. Oba wyniki mają być lepsze niż dwa proste podejścia: wybieranie zawsze najczęstszej klasy neutralnej, która stanowi 60% zbioru, oraz zwykłe zliczanie słów kluczowych ze słownika. Do tego wygenerujemy macierz pomyłek i opiszemy, które klasy najczęściej się ze sobą mylą
 
 ## 9. Zakres minimalny
 
 _Co powstanie na pewno. To jest obietnica, z której będziecie rozliczeni._
-Przygotowanie danych i podział na zbiór uczący i testowy (80/20), zamiana tekstu na wektory, napisanie prostego rozwiązania do porównania, implementacja własnego perceptrona i zestawienie go z gotowym modelem z biblioteki, policzenie wyników oraz wygenerowanie macierzy pomyłek.
+Przygotowanie danych i podział na zbiór uczący i testowy (80/20), zamiana tekstu na wektory, napisanie prostego rozwiązania do porównania, implementacja własnych perceptronów i zestawienie ich z gotowym modelem z biblioteki, policzenie wyników oraz wygenerowanie macierzy pomyłek.
 
 ## 10. Zakres opcjonalny
 
