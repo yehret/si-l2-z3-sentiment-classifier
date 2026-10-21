@@ -1,11 +1,8 @@
----
-share_link: https://share.note.sx/mdxqmhwe#9dalkcKZZG9oTSGt+Dqi/zjv8lvS1SslMGr78DAE6fY
-share_updated: 2026-09-27T09:38:22+02:00
----
-
 # Karta zgłoszenia tematu projektu
 
-**Grupa:** L2 (stacjonarna) **Data zgłoszenia:** 21.10.2026
+**Grupa:** L2 · **Zespół:** Z3 · **Data:** 21.10.2027
+Sztuczna inteligencja — laboratorium · Collegium Da Vinci · rok akad. 2026/2027
+Oddajecie mailem do **22.10, 16:45**, temat `SI L2 · Z3 · karta`.
 
 ---
 
@@ -17,8 +14,6 @@ share_updated: 2026-09-27T09:38:22+02:00
 | Mariia Minakova | 31100     | Przygotowanie i eksploracja danych, dokumentacja, prezentacja |
 |                 |           |                                                               |
 
-Rola to nie stanowisko, tylko deklaracja, za co ta osoba odpowiada: dane, implementacja, ewaluacja, dokumentacja, koordynacja.
-
 ## 2. Tytuł projektu
 
 **Po polsku:**
@@ -28,25 +23,21 @@ Financial News Sentiment Classifier
 
 ## 3. Problem
 
-_Co system ma robić i dla kogo. Opis sytuacji, nie nazwy technologii. 3–5 zdań._
+<!-- _Co system ma robić i dla kogo. Opis sytuacji, nie nazwy technologii. 3–5 zdań._ -->
+
 Inwestor giełdowy codziennie przegląda dziesiątki newsów, aby ocenić nastroje wokół wybranych spółek. Ręczne czytanie każdego komunikatu zajmuje godziny i łatwo w nim o pominięcie ważnej informacji. System automatycznie klasyfikuje krótkie wiadomości finansowe jako pozytywne, neutralne lub negatywne. Dzięki temu inwestor od razu widzi ogólny bilans nastrojów rynkowych.
 
 ## 4. Dlaczego zwykły algorytm nie wystarczy
 
-_Wskażcie jeden z trzech powodów omawianych na zajęciach i uzasadnijcie:_
+<!-- _Wskażcie jeden z trzech powodów omawianych na zajęciach i uzasadnijcie:_ -->
 
 - [ x ] nie umiemy zapisać reguły krok po kroku
 - [ ] przepis istnieje, ale jest obliczeniowo za drogi
 - [ ] reguł jest za dużo i zmieniają się w czasie
 
-_Uzasadnienie, 2–3 zdania:_
+<!-- _Uzasadnienie, 2–3 zdania:_ -->
+
 Nie da się tu napisać prostych reguł if-else, bo pojedyncze słowa w finansach bywają mylące, „wzrost” może dotyczyć zarówno zysków, jak i długów firmy. Zwykłe zliczanie słów kluczowych nie łapie takiego kontekstu i daje losowe wyniki. Dlatego zamiast pisać reguły ręcznie, wytrenujemy model na oznaczonych wcześniej wiadomościach.
-
----
-
-> Punkty poniżej wypełniacie do 3.10.
-
----
 
 ## 5. Technologia SI
 
@@ -56,7 +47,8 @@ Nie da się tu napisać prostych reguł if-else, bo pojedyncze słowa w finansac
 - [ x ] klasyczne uczenie maszynowe
 - [ ] inne:
 
-_Dlaczego akurat ta technologia pasuje do tego problemu, 2–3 zdania:_
+<!-- _Dlaczego akurat ta technologia pasuje do tego problemu, 2–3 zdania:_ -->
+
 Chcemy przyporządkować każdy nagłówek do jednej z trzech klas na podstawie gotowej bazy przykładów, do czego najlepiej nadaje się zwykła klasyfikacja. Ponieważ pojedynczy perceptron rozróżnia tylko dwie klasy, użyjemy trzech perceptronów w układzie „jedna klasa kontra reszta”. Proste algorytmy uczenia maszynowego połączone z wektoryzacją tekstu dobrze łapią powtarzające się zwroty w krótkich newsach
 
 ## 6. Dane
@@ -70,32 +62,38 @@ Chcemy przyporządkować każdy nagłówek do jednej z trzech klas na podstawie 
 
 ## 7. Stos technologiczny
 
-_Język, biblioteki, środowisko uruchomieniowe. Pamiętajcie: wszystko ma działać na CPU, bez karty graficznej._
+<!-- _Język, biblioteki, środowisko uruchomieniowe. Pamiętajcie: wszystko ma działać na CPU, bez karty graficznej._ -->
+
 Python, numpy, pandas, scikit-learn, matplotlib/seaborn
 
 ## 8. Kryterium sukcesu
 
-_Po czym poznamy, że projekt działa. Jaka metryka, jaki próg. Liczba, nie deklaracja._
+<!-- _Po czym poznamy, że projekt działa. Jaka metryka, jaki próg. Liczba, nie deklaracja._ -->
+
 Chcemy osiągnąć co najmniej 75% trafności (Accuracy) na zbiorze testowym oraz wynik F1 uśredniony po klasach (macro-F1) powyżej 0.65. Oba wyniki mają być lepsze niż dwa proste podejścia: wybieranie zawsze najczęstszej klasy neutralnej, która stanowi 60% zbioru, oraz zwykłe zliczanie słów kluczowych ze słownika. Do tego wygenerujemy macierz pomyłek i opiszemy, które klasy najczęściej się ze sobą mylą
 
 ## 9. Zakres minimalny
 
-_Co powstanie na pewno. To jest obietnica, z której będziecie rozliczeni._
+<!-- _Co powstanie na pewno. To jest obietnica, z której będziecie rozliczeni._ -->
+
 Przygotowanie danych i podział na zbiór uczący i testowy (80/20), zamiana tekstu na wektory, napisanie prostego rozwiązania do porównania, implementacja własnych perceptronów i zestawienie ich z gotowym modelem z biblioteki, policzenie wyników oraz wygenerowanie macierzy pomyłek.
 
 ## 10. Zakres opcjonalny
 
-_Co dorobicie, jeśli starczy czasu. Brak realizacji tej części nie obniża oceny._
+<!-- _Co dorobicie, jeśli starczy czasu. Brak realizacji tej części nie obniża oceny._ -->
+
 Sprawdzenie, które słowa najmocniej wpływają na decyzję modelu, czyli wagi cech. Przetestowanie wytrenowanego modelu na kilkunastu aktualnych nagłówkach i policzenie dla niej ogólnego bilansu nastrojów.
 
 ## 11. Repozytorium
 
-_Link:_
+<!-- _Link:_ -->
+
 https://github.com/yehret/uni-ai-project
 
 ## 12. Główne ryzyko i plan awaryjny
 
-_Co najprawdopodobniej pójdzie nie tak i co wtedy zrobicie._
+<!-- _Co najprawdopodobniej pójdzie nie tak i co wtedy zrobicie._ -->
+
 Główne ryzyko to przeciek danych oraz mocno nierówne klasy, bo w danych przeważają wiadomości neutralne.
 Plan awaryjny: dzielimy zbiór na uczący i testowy na samym początku pracy i nie ruszamy części testowej
 
@@ -113,11 +111,4 @@ Plan awaryjny: dzielimy zbiór na uczący i testowy na samym początku pracy i n
 
 ---
 
-## Decyzja prowadzącego
-
-_Wypełnia prowadzący — nie edytujcie tej sekcji._
-
-- [ ] zatwierdzony
-- [ ] do poprawy
-
-**Uwagi:**
+_Decyzja prowadzącego:_ [ ] zatwierdzony [ ] do poprawy · _Uwagi:_
