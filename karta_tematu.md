@@ -1,8 +1,7 @@
 # Karta zgłoszenia tematu projektu
 
-**Grupa:** L2 · **Zespół:** Z3 · **Data:** 21.10.2027
+**Grupa:** L2 · **Zespół:** Z3 · **Data:** 21.10.2026
 Sztuczna inteligencja — laboratorium · Collegium Da Vinci · rok akad. 2026/2027
-Oddajecie mailem do **22.10, 16:45**, temat `SI L2 · Z3 · karta`.
 
 ---
 
@@ -88,7 +87,7 @@ Sprawdzenie, które słowa najmocniej wpływają na decyzję modelu, czyli wagi 
 
 <!-- _Link:_ -->
 
-https://github.com/yehret/uni-ai-project
+[[[https://github.com/yehret/uni-ai-project]()](https://github.com/yehret/si-l2-z3-sentiment-classifier)]
 
 ## 12. Główne ryzyko i plan awaryjny
 
