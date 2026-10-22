@@ -87,7 +87,7 @@ Sprawdzenie, które słowa najmocniej wpływają na decyzję modelu, czyli wagi 
 
 <!-- _Link:_ -->
 
-[[[https://github.com/yehret/uni-ai-project]()](https://github.com/yehret/si-l2-z3-sentiment-classifier)]
+https://github.com/yehret/si-l2-z3-sentiment-classifier
 
 ## 12. Główne ryzyko i plan awaryjny
 
