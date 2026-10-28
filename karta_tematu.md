@@ -11,7 +11,6 @@ Sztuczna inteligencja — laboratorium · Collegium Da Vinci · rok akad. 2026/2
 | --------------- | --------- | ------------------------------------------------------------- |
 | Serhii Samoliuk | 31070     | Implementacja rdzenia, dokumentacja                           |
 | Mariia Minakova | 31100     | Przygotowanie i eksploracja danych, dokumentacja, prezentacja |
-|                 |           |                                                               |
 
 ## 2. Tytuł projektu
 
