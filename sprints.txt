@@ -1,0 +1,18 @@
+=== Sprint 5.11 ===
+
+
+
+Zobowiązanie z poprzednich zajęć: przygotowanie i ocena dwóch punktów odniesienia na podzielonym wcześniej zbiorze danych.
+
+
+
+[Serhii Samoliuk]
+
+Zrobiłem: Zaktualizowałem kartę tematu do wersji ostatecznej, opisałem instrukcję uruchomienia projektu krok po kroku w pliku README.md oraz zaimplementowałem dwa modele bazowe (MajorityClassBaseline i KeywordBaseline) w pliku src/baseline.py.
+
+Na następne zajęcia zrobię: Zaimplementuję w NumPy własny klasyfikator złożony z trzech perceptronów w układzie „jedna klasa kontra reszta” (One-vs-Rest) w pliku src/perceptron.py.
+
+
+Blokuje nas: nic
+
+Zobowiązanie zespołu na następne zajęcia: Działający od początku do końca potok klasyfikacji (wektoryzacja TF-IDF + trzy perceptrony One-vs-Rest) z policzonym wynikiem Accuracy i macro-F1 zestawionym obok obu punktów odniesienia.
