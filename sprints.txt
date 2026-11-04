@@ -12,6 +12,11 @@ Zrobiłem: Zaktualizowałem kartę tematu do wersji ostatecznej, opisałem instr
 
 Na następne zajęcia zrobię: Zaimplementuję w NumPy własny klasyfikator złożony z trzech perceptronów w układzie „jedna klasa kontra reszta” (One-vs-Rest) w pliku src/perceptron.py.
 
+[Mariia Minakova]
+
+Zrobiłam: Na bazie przygotowanego w poprzednim tygodniu notatnika 01_dane_i_eksploracja.ipynb i podziału train/test (2758 / 690 zdań), stworzyłam notatnik 02_punkt_odniesienia.ipynb, policzyłam metryki Accuracy oraz macro-F1 dla obu modeli bazowych i wygenerowałam macierz pomyłek w results/baseline_keyword_cm.png.
+
+Na następne zajęcia zrobię: Przygotuję wektoryzację tekstu TF-IDF dopasowaną wyłącznie na zbiorze uczącym (train.csv) i przeprowadzę ewaluację naszego perceptronu na tle punktów odniesienia.
 
 Blokuje nas: nic
 
