@@ -1,22 +1,42 @@
-# <Tytuł projektu>
+# Klasyfikator sentymentu wiadomości finansowych
 
-**Zespół:** Z.. · grupa L2 · **Repozytorium:** <link>
+**Zespół:** Z3 · grupa L2 · **Repozytorium:** [<link>](https://github.com/yehret/si-l2-z3-sentiment-classifier)
 Sztuczna inteligencja — laboratorium · Collegium Da Vinci · rok akad. 2026/2027
-
-> Jak korzystać z szablonu: zostawcie nagłówki, usuńcie bloki „> Co tu wpisać”, wpiszcie swoją treść.
-> Długość wynika z treści — nie ma wymogu liczby stron. W nawiasie przy każdym nagłówku: za co w rubryce ta część jest oceniana.
 
 ## 1. Problem _(rubryka A)_
 
-> Co tu wpisać: kto ma problem, w jakiej sytuacji, co system dla niego robi. Co wchodzi do systemu, co z niego wychodzi. 3–6 zdań, rozwinięcie pkt 4 karty tematu.
+Odbiorcą systemu jest inwestor giełdowy lub analityk finansowy, który każdego dnia śledzi dziesiątki krótkich komunikatów prasowych oraz nagłówków rynkowych dotyczących notowanych spółek. Ręczne czytanie i ocenianie wydźwięku każdej wiadomości jest czasochłonne oraz podatne na subiektywną interpretację, natomiast na rynku finansowym liczy się szybka orientacja w ogólnym nastawieniu informacyjnym wokół danej firmy.
+
+System rozwiązuje problem automatycznej kategoryzacji krótkich tekstów finansowych pod kątem ich wydźwięku emocjonalno-rynkowego (analiza sentymentu):
+
+Input: pojedynczy nagłówek lub krótkie zdanie wiadomości finansowej w języku angielskim.
+
+Output: jedna z trzech dyskretnych klas sentymentu: positive , neutral lub negative.
 
 ## 2. Dlaczego SI i dlaczego ta technika _(B · 7 pkt)_
 
-> Co tu wpisać: dlaczego zwykły algorytm nie wystarcza (nie umiemy zapisać reguły / przepis jest za drogi / reguł jest za dużo). Dlaczego wybraliście tę technikę z modułu, a nie inną — jedno zdanie o tym, co by się stało przy alternatywie.
+Klasyczne podejście algorytmiczne oparte na sztywnych regułach warunkowych (if-else) lub prostym słowniku słów kluczowych okazuje się niewystarczające w domenie finansowej. O wydźwięku zdania decyduje kontekst oraz wzajemne powiązanie słów: przykładowo słowo growth lub increase ma wydźwięk pozytywny w zestawieniu profit growth (wzrost zysku), ale negatywny w frazie debt growth (wzrost zadłużenia). Sztywne reguły nie potrafią również samodzielnie dobrać wag poszczególnych pojęć na podstawie rzeczywistych przykładów rynkowych.
+
+W projekcie zastosowaliśmy klasyczne uczenie maszynowe łączące wektoryzację TF-IDF z układem trzech binarnych perceptronów w architekturze One-vs-Rest:
+
+Wektoryzacja TF-IDF zamienia tekst w wektor liczbowy, nadając wyższą wagę rzadkim, niosącym treść terminom finansowym, a obniżając znaczenie słów powszechnych.
+
+Trzy perceptrony stanowią prosty, liniowy model klasyfikacji wieloklasowej, który dobrze radzi sobie w wielowymiarowej przestrzeni cech tekstowych. W porównaniu z głębokimi drzewami decyzyjnymi model liniowy jest mniej podatny na przeuczenie na rzadkich wektorach tekstu, a w porównaniu z dużymi sieciami neuronowymi uczy się w ułamku sekundy lokalnie na CPU i pozwala bezpośrednio odczytać wagi przypisane konkretnym słowom.
 
 ## 3. Dane _(B · 8 pkt)_
 
-> Co tu wpisać: źródło (nazwa, link), rozmiar, format, co zrobiliście z danymi przed użyciem. Jeśli system się uczy: jak podzieliliście dane na część uczącą i testową i dlaczego test nie „widzi” danych uczących. Jeśli dane generujecie sami: jak i z jakim ziarnem losowości.
+Projekt wykorzystuje publiczny zbiór danych Financial PhraseBank (takala/financial_phrasebank), wariant Sentences_75Agree.txt, który zawiera zdania z wiadomości finansowych co do których etykiety zgodziło się co najmniej 75% niezależnych ekspertów z dziedziny finansów i ekonomii.
+
+Podczas wstępnego przetwarzania (notebooks/01_dane_i_eksploracja.ipynb) usunięto zduplikowane wpisy oraz zweryfikowano kompletność rekordów (brak pustych wartości). Po oczyszczeniu zbiór liczy 3 448 unikalnych zdań. Średnia długość komunikatu wynosi 22,8 słowa.
+
+Zbiór danych charakteryzuje się wyraźną nierównowagą klas, zdecydowaną większość stanowią komunikaty neutralne:
+
+neutral - 2141 zdań - 62,09%
+positive - 887 - 25,73%
+negative - 420 - 12,18%
+
+Zbiór 3 448 zdań został podzielony jednorazowo w proporcji 80/20
+Aby całkowicie wyeliminować wyciek danych, wektoryzator jest dopasowywany wyłącznie na zbiorze uczącym train.csv, natomiast na zbiorze testowym test.csv wykonywana jest jedynie transformacja.
 
 ## 4. Rozwiązanie _(A · 10 pkt, B · 5 pkt)_
 
