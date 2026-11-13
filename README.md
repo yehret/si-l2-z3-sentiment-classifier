@@ -1,59 +1,58 @@
-Financial News Sentiment Classifier
+# Financial News Sentiment Classifier
 
-The system automatically classifies short financial news in English into one of three sentiment classes: positive, neutral, or negative.
+**Team:** Z3 · Artificial Intelligence lab, Collegium Da Vinci, 2026/2027 · group L2
 
-1. Dataset Description
+> How to use: keep the headings, delete the "> What to write" blocks. Plain, short English is fine — content matters, not style.
 
-The project utilizes the public Financial PhraseBank dataset (takala/financial_phrasebank, variant Sentences_75Agree.txt — minimum 75% annotator agreement).
+## What it does
 
-Number of unique sentences (after removing duplicates): 3448
+The system is designed for stock market investors and financial analysts who need to quickly assess market sentiment without manually reading dozens of daily news releases. Short financial news headlines in English go into the system as plain text, and the classifier outputs one of three sentiment labels: positive, neutral, or negative
 
-Class distribution:
+> What to write: 2–4 sentences. Who the system is for, what goes in, what comes out.
 
-neutral: 2141 sentences (62.09%)
+## AI technique
 
-positive: 887 sentences (25.73%)
+We use classical machine learning combining TF-IDF text vectorization with three binary Perceptrons arranged in a One-vs-Rest (OvR) architecture, where the final class is selected via raw activation. Unlike rigid keyword dictionaries, this linear model learns word weights directly from labeled financial sentences to capture domain-specific context.
 
-negative: 420 sentences (12.18%)
+> What to write: which technique (e.g. genetic algorithm, neural network) and why it fits this problem — one or two sentences.
 
-Average message length: 22.8 words (min: 2, max: 81)
+## Results
 
-Data split: The dataset was split once with stratification (random_state=42) in an 80/20 ratio:
+The models are evaluated on a frozen test set (data/processed/test.csv, 690 sentences), created via a stratified 80/20 split (random_state=42) from 3,448 unique sentences of the Financial PhraseBank dataset (Sentences_75Agree.txt: 62.09% neutral, 25.73% positive, 12.18% negative; average length 22.8 words).
 
-Training set (data/processed/train.csv): 2758 sentences
+> What to write: the main result next to the baseline, in one sentence or a small table. Example: "On 5 test instances the system reaches 97% of the optimum; the greedy baseline reaches 92%."
 
-Test set (data/processed/test.csv): 690 sentences (frozen for evaluation)
+## How to run
 
-2. Getting Started (From Cloning to Results)
+1. Clone the repo and install dependencies:
 
-All computations run locally on the CPU and do not require a graphics card.
-
-Step 1: Clone the repository
-
+```
 git clone https://github.com/yehret/si-l2-z3-sentiment-classifier.git
-
 cd si-l2-z3-sentiment-classifier
-
-Step 2: Create a virtual environment and install dependencies
-
 python -m venv venv
-
 source venv/Scripts/activate
-
 pip install -r requirements.txt
+```
 
-Step 3: Run notebooks and scripts
+2. Run the baseline evalutaion:
 
-Check the baseline models from the terminal:
-
+```
 python src/baseline.py
+```
 
-The script loads data/processed/train.csv and data/processed/test.csv and prints the Accuracy and macro-F1 results for both baseline methods in the console.
+3. Run Jupyter Notebooks
 
-Run Jupyter Notebooks (in VS Code or browser):
+> What to write: requirements (Python version, data files) and where the output appears.
+> Evaluation metrics (Accuracy and Macro-F1) are printed directly in the terminal or notebook cell outputs, while generated plots and confusion matrices are saved in the results/ directory.
 
-Open notebooks/01_dane_i_eksploracja.ipynb and notebooks/02_punkt_odniesienia.ipynb sequentially.
+## Team
 
-Select the Python kernel from the venv environment and click Run All.
+Serhii Samoliuk (31070): Core algorithm implementation and technical documentation.
 
-Plots and results are automatically saved in the results/ and data/processed/ directories.
+Mariia Minakova (31100): Data preparation and exploration, model evaluation, documentation, and presentation.
+
+> What to write: names and who did what (one line each).
+
+## Documentation
+
+Full documentation in Polish: `docs/dokumentacja.md`. Technical: `docs/tech.md`.
