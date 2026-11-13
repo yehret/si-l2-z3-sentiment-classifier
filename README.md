@@ -2,25 +2,17 @@
 
 **Team:** Z3 · Artificial Intelligence lab, Collegium Da Vinci, 2026/2027 · group L2
 
-> How to use: keep the headings, delete the "> What to write" blocks. Plain, short English is fine — content matters, not style.
-
 ## What it does
 
 The system is designed for stock market investors and financial analysts who need to quickly assess market sentiment without manually reading dozens of daily news releases. Short financial news headlines in English go into the system as plain text, and the classifier outputs one of three sentiment labels: positive, neutral, or negative
-
-> What to write: 2–4 sentences. Who the system is for, what goes in, what comes out.
 
 ## AI technique
 
 We use classical machine learning combining TF-IDF text vectorization with three binary Perceptrons arranged in a One-vs-Rest (OvR) architecture, where the final class is selected via raw activation. Unlike rigid keyword dictionaries, this linear model learns word weights directly from labeled financial sentences to capture domain-specific context.
 
-> What to write: which technique (e.g. genetic algorithm, neural network) and why it fits this problem — one or two sentences.
-
 ## Results
 
 The models are evaluated on a frozen test set (data/processed/test.csv, 690 sentences), created via a stratified 80/20 split (random_state=42) from 3,448 unique sentences of the Financial PhraseBank dataset (Sentences_75Agree.txt: 62.09% neutral, 25.73% positive, 12.18% negative; average length 22.8 words).
-
-> What to write: the main result next to the baseline, in one sentence or a small table. Example: "On 5 test instances the system reaches 97% of the optimum; the greedy baseline reaches 92%."
 
 ## How to run
 
@@ -42,16 +34,11 @@ python src/baseline.py
 
 3. Run Jupyter Notebooks
 
-> What to write: requirements (Python version, data files) and where the output appears.
-> Evaluation metrics (Accuracy and Macro-F1) are printed directly in the terminal or notebook cell outputs, while generated plots and confusion matrices are saved in the results/ directory.
-
 ## Team
 
 Serhii Samoliuk (31070): Core algorithm implementation and technical documentation.
 
 Mariia Minakova (31100): Data preparation and exploration, model evaluation, documentation, and presentation.
-
-> What to write: names and who did what (one line each).
 
 ## Documentation
 
