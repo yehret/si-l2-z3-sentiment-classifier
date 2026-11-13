@@ -68,7 +68,7 @@ Python, numpy, pandas, scikit-learn, matplotlib/seaborn
 
 <!-- _Po czym poznamy, że projekt działa. Jaka metryka, jaki próg. Liczba, nie deklaracja._ -->
 
-Chcemy osiągnąć co najmniej 75% trafności (Accuracy) na zbiorze testowym oraz wynik F1 uśredniony po klasach (macro-F1) powyżej 0.65. Oba wyniki mają być lepsze niż dwa proste podejścia: wybieranie zawsze najczęstszej klasy neutralnej, która stanowi 60% zbioru, oraz zwykłe zliczanie słów kluczowych ze słownika. Do tego wygenerujemy macierz pomyłek i opiszemy, które klasy najczęściej się ze sobą mylą
+Chcemy osiągnąć co najmniej 85% trafności (Accuracy) na zbiorze testowym oraz wynik F1 uśredniony po klasach (macro-F1) powyżej 0.75. Oba wyniki mają być lepsze niż dwa proste podejścia: wybieranie zawsze najczęstszej klasy neutralnej, która stanowi 60% zbioru, oraz zwykłe zliczanie słów kluczowych ze słownika. Do tego wygenerujemy macierz pomyłek i opiszemy, które klasy najczęściej się ze sobą mylą
 
 ## 9. Zakres minimalny
 
