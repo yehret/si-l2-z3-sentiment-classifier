@@ -99,11 +99,21 @@ Wektorizer dopasowano wyłącznie do 2758 zdań ze zbioru uczącego. Zbiór test
 
 ## 5. Ewaluacja _(B · 8 pkt)_
 
-> Co tu wpisać: metryka (ta z karty, pkt 8), punkt odniesienia (prosta metoda z karty), wyniki na kilku przypadkach — w tabeli albo na wykresie. Jedno–dwa zdania wniosku: czy system jest lepszy od punktu odniesienia i o ile.
+Wszystkie modele zostały ocenione na tym samym, zamrożonym zbiorze testowym (`data/processed/test.csv`, $N = 690$ zdań) przy użyciu trafności (`Accuracy`) oraz głównej miary dla danych niezbalansowanych (`Macro-F1`).
 
-| Przypadek / zbiór | Punkt odniesienia | Nasz system |
-| ----------------- | ----------------- | ----------- |
-| …                 | …                 | …           |
+| Model                                                           | Accuracy (%) |  Macro-F1  |
+| :-------------------------------------------------------------- | :----------: | :--------: |
+| Baseline 1: Klasa większościowa (`neutral`)                     | $62{,}03\%$  | $0{,}2552$ |
+| Baseline 2: Słownik słów kluczowych                             | $76{,}81\%$  | $0{,}6804$ |
+| Model 3: Własny `OneVsRestPerceptron` (bazowy)                  | $78{,}26\%$  | $0{,}7174$ |
+| Model 4: Referencyjny `sklearn.linear_model.Perceptron`         | $84{,}64\%$  | $0{,}8015$ |
+| Model 5: Własny `Averaged OneVsRestPerceptron` + `balanced`\*\* | $85{,}36\%$  | $0{,}7976$ |
+
+**Wnioski z ewaluacji:**
+
+- Nasz podstawowy perceptron (`Model 3`) pokonał oba punkty odniesienia ($78{,}26\%$ vs $76{,}81\%$), ale zatrzymał się poniżej progu sukcesu ($82\%$ / $0{,}75$) przez usuwanie słów kierunkowych (_up_, _down_, _not_) oraz oscylacje wag na niezbalansowanym zbiorze.
+- Po zachowaniu słów kierunkowych w TF-IDF, dodaniu uśredniania wag (_Averaged Perceptron_) oraz ważenia klas (`Model 5`), trafność wzrosła o ponad $7$ punktów procentowych do **$85{,}36\%$**, a `Macro-F1` do **$0{,}7976$**.
+- Model wyraźnie przekroczył nasze kryterium sukcesu ($82\%$ Accuracy i $0{,}75$ Macro-F1) i uzyskał trafność nieznacznie wyższą niż gotowa implementacja `sklearn.linear_model.Perceptron` ($84{,}64\%$). Macierz pomyłek oraz krzywą błędów w epokach zapisano w `results/perceptron_cm.png`, a najważniejsze słowa dla każdej klasy w `results/perceptron_top_features.png`.
 
 ## 6. Wymagania niefunkcjonalne _(A · 5 pkt)_
 
@@ -115,7 +125,16 @@ Wszystkie operacje losowe — zarówno podział zbioru na część uczącą i te
 
 ## 7. Ograniczenia _(E · 4 pkt)_
 
-> Co tu wpisać: kiedy system się myli albo nie zadziała — najlepiej na konkretnym przykładzie. Co zrobilibyście dalej, mając więcej czasu. Czy zastosowana technologia jest dziś nadal stosowana, czy zastąpiły ją nowsze.
+Mimo wysokiej skuteczności ($85{,}36\%$), nasz klasyfikator liniowy oparty na reprezentacji worka słów (TF-IDF) błędnie klasyfikuje $101$ z $690$ zdań ze zbioru testowego. Wynika to z następujących ograniczeń technicznych:
+
+- **Brak pełnego zrozumienia składni i rzadszych czasowników:** Model ocenia obecność pojedynczych słów i bigramów, nie analizując struktury porównawczej zdania ani rzadszych synonimów spadku lub wzrostu.
+- **Wrażliwość na słowa o negatywnym zabarwieniu w kontekście neutralnym:** Informacje branżowe zawierające słowa kojarzone z zagrożeniem (np. o cyberatakach w raporcie firmy bezpieczeństwa) mogą zostać błędnie odebrane jako negatywne dla samej spółki.
+- **Przykłady błędnych klasyfikacji ze zbioru testowego:**
+  1. _„The company said that sales in the three months to the end of March slid to EUR86 .4 m US$ 113.4 m from EUR91 .2 m last year .”_ — prawdziwa klasa: `negative`, predykcja: `positive` ($Z = [\text{neg}: 0{,}013,\ \text{neu}: -0{,}171,\ \text{pos}: 0{,}057]$; rzadsze słowo _slid_ nie przeważyło nad neutralno-pozytywnym kontekstem sprzedaży).
+  2. _„F-Secure reported that : - The first half of 2008 has seen a growing number of targeted malware attacks on individuals , companies , and organizations .”_ — prawdziwa klasa: `neutral`, predykcja: `negative` ($Z = [\text{neg}: 0{,}078,\ \text{neu}: -0{,}054,\ \text{pos}: -0{,}071]$; słowa _malware_ i _attacks_ wywołały fałszywy alarm negatywny w czysto informacyjnym raporcie).
+  3. _„Fiskars , the World 's 1 Scissors Brand TM , recently won Learning -« Magazine 's 2011 Teachers ' Choice Award for the Classroom .”_ — prawdziwa klasa: `positive`, predykcja: `neutral` (sukces produktowy bez typowego słownictwa finansowego typu _profit_ czy _revenue_).
+
+**Kierunki dalszego rozwoju:** Zastąpienie prostych wektorów TF-IDF gęstymi osadzeniami kontekstowymi (np. dostrojonym modelem językowym **FinBERT**) oraz rozbudowa zbioru o dodatkowe przykłady wiadomości negatywnych.
 
 ## 8. Zastosowania w praktyce _(E · 4 pkt)_
 
