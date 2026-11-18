@@ -22,10 +22,17 @@ Zobowiązanie zespołu na następne zajęcia: Działający od początku do końc
 
 
 
-   Zobowiązanie z poprzednich zajęć: Działający od początku do końca potok klasyfikacji (wektoryzacja TF-IDF + trzy perceptrony One-vs-Rest) z policzonym wynikiem Accuracy i macro-F1 zestawionym obok obu punktów odniesienia — zrobione.
+Zobowiązanie z poprzednich zajęć: Działający od początku do końca potok klasyfikacji (wektoryzacja TF-IDF + trzy perceptrony One-vs-Rest) z policzonym wynikiem Accuracy i macro-F1 zestawionym obok obu punktów odniesienia — zrobione.
 
 
 
-   [Serhii Samoliuk]
-   Zrobiłem: Zaimplementowałem w NumPy własny klasyfikator OneVsRestPerceptron z wyborem klasy przez argmax(Z) w pliku src/perceptron.py, dodałem uśrednianie wag (Averaged Perceptron), kompensację nierównowagi klas oraz porównanie z sklearn.linear_model.Perceptron, a także wypełniłem sekcje 4 i 6 w docs/dokumentacja.md.
-   Na następne zajęcia zrobię: Przetestuję wytrenowany model na kilkunastu aktualnych nagłówkach finansowych, uzupełnię sekcje 8, 10 i 11 w docs/dokumentacja.md oraz przygotuję streszczenie techniczne po angielsku (docs/abstract_en.md) przed code freeze.
+[Serhii Samoliuk]
+Zrobiłem: Zaimplementowałem w NumPy własny klasyfikator OneVsRestPerceptron z wyborem klasy przez argmax(Z) w pliku src/perceptron.py, dodałem uśrednianie wag (Averaged Perceptron), kompensację nierównowagi klas oraz porównanie z sklearn.linear_model.Perceptron, a także wypełniłem sekcje 4 i 6 w docs/dokumentacja.md.
+Na następne zajęcia zrobię: Przetestuję wytrenowany model na kilkunastu aktualnych nagłówkach finansowych, uzupełnię sekcje 8, 10 i 11 w docs/dokumentacja.md oraz przygotuję streszczenie techniczne po angielsku (docs/abstract_en.md) przed code freeze.
+
+[Mariia Minakova]
+Zrobiłam: Uzupełniłam sekcje 1–3, 5 i 7 w docs/dokumentacja.md, stworzyłam notatnik 03_model_perceptron.ipynb z wektoryzacją TF-IDF dopasowaną wyłącznie na zbiorze uczącym, policzyłam metryki dla wszystkich wariantów modelu obok punktów odniesienia oraz wygenerowałam macierz pomyłek, wykres uczenia i analizę wag cech.
+Na następne zajęcia zrobię: Uzupełnię sekcję 9 (Zespół) w dokumentacji, dostosuję ostatecznie README.md do wyników końcowych przed code freeze (26.11) oraz przygotuję prezentację finałową.
+
+Blokuje nas: nic
+Zobowiązanie zespołu na następne zajęcia: Zamrożenie kodu (code freeze 26.11), przetestowanie modelu na aktualnych nagłówkach rynkowych oraz kompletna wersja robocza dokumentacji PL i EN.
