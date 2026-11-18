@@ -1,3 +1,14 @@
+"""
+Moduł implementujący własny wieloklasowy klasyfikator oparty na trzech
+binarnych perceptronach w architekturze One-vs-Rest (OvR) przy użyciu NumPy.
+
+Zawiera:
+- podstawowy perceptron z wyborem klasy przez argmax(Z_k),
+- rozszerzenie Averaged Perceptron (uśrednianie wag po wszystkich krokach),
+- opcjonalne ważenie klas (class_weight="balanced") dla niezbalansowanego zbioru,
+- funkcję porównawczą z gotowym modelem sklearn.linear_model.Perceptron.
+"""
+
 from pathlib import Path
 from time import perf_counter
 from typing import Dict, Iterable, List, Optional, Tuple
@@ -5,6 +16,7 @@ import numpy as np
 import pandas as pd
 from scipy.sparse import issparse
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import Perceptron as SklearnPerceptron
 from sklearn.metrics import accuracy_score, f1_score
 
 
@@ -22,17 +34,24 @@ class OneVsRestPerceptron:
         self,
         learning_rate: float = 0.1,
         n_epochs: int = 15,
+        averaged: bool = False,
+        class_weight: Optional[str] = None,
         random_state: Optional[int] = 42,
     ) -> None:
         if learning_rate <= 0:
             raise ValueError("Współczynnik uczenia (learning_rate) musi być dodatni.")
         if n_epochs < 1:
             raise ValueError("Liczba epok (n_epochs) musi wynosić co najmniej 1.")
+        if class_weight not in (None, "balanced"):
+            raise ValueError("Parametr class_weight musi mieć wartość None lub 'balanced'.")
 
         self.learning_rate = learning_rate
         self.n_epochs = n_epochs
+        self.averaged = averaged
+        self.class_weight = class_weight
         self.random_state = random_state
 
+        # Atrybuty ustawiane podczas treningu (fit)
         self.classes_: Optional[np.ndarray] = None
         self.weights_: Optional[np.ndarray] = None
         self.biases_: Optional[np.ndarray] = None
@@ -82,18 +101,30 @@ class OneVsRestPerceptron:
         n_samples, n_features = X_arr.shape
         n_classes = len(self.classes_)
 
-        # Inicjalizacja wag i biasów zerami
         self.weights_ = np.zeros((n_classes, n_features), dtype=np.float64)
         self.biases_ = np.zeros(n_classes, dtype=np.float64)
         self.errors_history_ = {}
 
         rng = np.random.default_rng(self.random_state)
 
-        # Trening oddzielnego perceptronu dla każdej klasy k
         for class_idx, target_class in enumerate(self.classes_):
             y_binary = np.where(y_arr == target_class, 1.0, -1.0)
-            w = self.weights_[class_idx]
+            w = np.zeros(n_features, dtype=np.float64)
             b = 0.0
+
+            # Zmienne pomocnicze dla wariantu Averaged Perceptron
+            w_sum = np.zeros(n_features, dtype=np.float64)
+            b_sum = 0.0
+            total_steps = 0
+
+            # Współczynnik kompensacji nierównowagi klas (łagodne pierwiastkowe skalowanie)
+            if self.class_weight == "balanced":
+                n_pos = float(np.sum(y_binary == 1.0))
+                n_neg = float(np.sum(y_binary == -1.0))
+                pos_multiplier = float(np.sqrt(n_neg / max(n_pos, 1.0)))
+            else:
+                pos_multiplier = 1.0
+
             epoch_errors: List[int] = []
 
             for _ in range(self.n_epochs):
@@ -104,22 +135,32 @@ class OneVsRestPerceptron:
                     x_i = X_arr[idx]
                     y_true = y_binary[idx]
 
-                    # Surowe pobudzenie liniowe: z = w * x + b
                     z = float(np.dot(w, x_i) + b)
                     y_pred = 1.0 if z >= 0.0 else -1.0
 
                     if y_pred != y_true:
-                        update = self.learning_rate * y_true
+                        step_lr = self.learning_rate * (pos_multiplier if y_true == 1.0 else 1.0)
+                        update = step_lr * y_true
                         w += update * x_i
                         b += update
                         errors += 1
+
+                    if self.averaged:
+                        w_sum += w
+                        b_sum += b
+                        total_steps += 1
 
                 epoch_errors.append(errors)
                 if errors == 0:
                     break
 
-            self.weights_[class_idx] = w
-            self.biases_[class_idx] = b
+            if self.averaged and total_steps > 0:
+                self.weights_[class_idx] = w_sum / total_steps
+                self.biases_[class_idx] = b_sum / total_steps
+            else:
+                self.weights_[class_idx] = w
+                self.biases_[class_idx] = b
+
             self.errors_history_[str(target_class)] = epoch_errors
 
         self.train_time_sec_ = perf_counter() - start_time
@@ -145,7 +186,6 @@ class OneVsRestPerceptron:
     def predict(self, X: object) -> np.ndarray:
         """
         Zwraca przewidywaną etykietę klasy dla każdej próbki na podstawie reguły argmax(Z).
-        Rozwiązuje remisy zarówno gdy dwa perceptrony dają wynik dodatni, jak i gdy żaden.
         """
         start_time = perf_counter()
 
@@ -161,7 +201,6 @@ class OneVsRestPerceptron:
     ) -> Dict[str, List[Tuple[str, float]]]:
         """
         Zwraca po top_n słów/fraz o najwyższych dodatnich wagach dla każdej klasy.
-        Przydatne do interpretacji decyzji modelu w dokumentacji i prezentacji.
         """
         if self.weights_ is None or self.classes_ is None:
             raise RuntimeError("Model nie został jeszcze wytrenowany.")
@@ -179,6 +218,36 @@ class OneVsRestPerceptron:
         return top_features
 
 
+def evaluate_sklearn_perceptron(
+    X_train: object,
+    y_train: Iterable[str],
+    X_test: object,
+    y_test: Iterable[str],
+    random_state: int = 42,
+) -> Dict[str, float]:
+    """
+    Trenuje i ocenia referencyjny Perceptron z biblioteki scikit-learn
+    na tych samych cechach TF-IDF (punkt 9 karty tematu).
+    """
+    t0 = perf_counter()
+    sk_clf = SklearnPerceptron(
+        max_iter=20,
+        eta0=0.1,
+        class_weight="balanced",
+        random_state=random_state,
+    )
+    sk_clf.fit(X_train, list(y_train))
+    train_time = perf_counter() - t0
+
+    preds = sk_clf.predict(X_test)
+    y_test_list = list(y_test)
+    return {
+        "accuracy": round(accuracy_score(y_test_list, preds) * 100, 2),
+        "macro_f1": round(f1_score(y_test_list, preds, average="macro"), 4),
+        "train_time_sec": round(train_time, 4),
+    }
+
+
 if __name__ == "__main__":
     train_path = Path("data/processed/train.csv")
     test_path = Path("data/processed/test.csv")
@@ -189,23 +258,55 @@ if __name__ == "__main__":
         train_df = pd.read_csv(train_path)
         test_df = pd.read_csv(test_path)
 
-        vectorizer = TfidfVectorizer(
-            max_features=3000,
+        # 1. Wariant bazowy (z zachowaniem stop_words="english")
+        vec_base = TfidfVectorizer(max_features=3000, ngram_range=(1, 2), stop_words="english")
+        X_tr_base = vec_base.fit_transform(train_df["sentence"])
+        X_te_base = vec_base.transform(test_df["sentence"])
+
+        clf_base = OneVsRestPerceptron(learning_rate=0.1, n_epochs=15, averaged=False, random_state=42)
+        clf_base.fit(X_tr_base, train_df["label"])
+        preds_base = clf_base.predict(X_te_base)
+
+        # 2. Wariant ulepszony: zachowanie słów kierunkowych (up/down/not) + Averaged Perceptron + balanced
+        vec_imp = TfidfVectorizer(
+            max_features=5000,
             ngram_range=(1, 2),
-            stop_words="english",
+            min_df=2,
+            sublinear_tf=True,
+            stop_words=None,
         )
-        X_train = vectorizer.fit_transform(train_df["sentence"])
-        X_test = vectorizer.transform(test_df["sentence"])
+        X_tr_imp = vec_imp.fit_transform(train_df["sentence"])
+        X_te_imp = vec_imp.transform(test_df["sentence"])
 
-        clf = OneVsRestPerceptron(learning_rate=0.1, n_epochs=15, random_state=42)
-        clf.fit(X_train, train_df["label"])
-        preds = clf.predict(X_test)
+        clf_imp = OneVsRestPerceptron(
+            learning_rate=0.1,
+            n_epochs=20,
+            averaged=True,
+            class_weight="balanced",
+            random_state=42,
+        )
+        clf_imp.fit(X_tr_imp, train_df["label"])
+        preds_imp = clf_imp.predict(X_te_imp)
 
-        acc = accuracy_score(test_df["label"], preds) * 100
-        macro_f1 = f1_score(test_df["label"], preds, average="macro")
+        # 3. Referencyjny model z biblioteki scikit-learn
+        sk_res = evaluate_sklearn_perceptron(X_tr_imp, train_df["label"], X_te_imp, test_df["label"])
 
-        print("=== WYNIKI WŁASNEGO PERCEPTRONU ONE-VS-REST (ZBIÓR TESTOWY, N = 690) ===")
-        print(f"Accuracy:          {acc:.2f}%")
-        print(f"Macro-F1:          {macro_f1:.4f}")
-        print(f"Czas treningu:     {clf.train_time_sec_:.4f} s")
-        print(f"Czas predykcji:    {clf.last_predict_time_sec_:.6f} s")
+        print("=== PORÓWNANIE WARIANTÓW PERCEPTRONU (ZBIÓR TESTOWY, N = 690) ===")
+        print(
+            f"1. Własny OneVsRestPerceptron (bazowy):    "
+            f"Accuracy = {accuracy_score(test_df['label'], preds_base) * 100:.2f}% | "
+            f"Macro-F1 = {f1_score(test_df['label'], preds_base, average='macro'):.4f} | "
+            f"Czas = {clf_base.train_time_sec_:.4f} s"
+        )
+        print(
+            f"2. Własny Averaged OvR + balanced:         "
+            f"Accuracy = {accuracy_score(test_df['label'], preds_imp) * 100:.2f}% | "
+            f"Macro-F1 = {f1_score(test_df['label'], preds_imp, average='macro'):.4f} | "
+            f"Czas = {clf_imp.train_time_sec_:.4f} s"
+        )
+        print(
+            f"3. Gotowy sklearn.linear_model.Perceptron: "
+            f"Accuracy = {sk_res['accuracy']:.2f}% | "
+            f"Macro-F1 = {sk_res['macro_f1']:.4f} | "
+            f"Czas = {sk_res['train_time_sec']:.4f} s"
+        )

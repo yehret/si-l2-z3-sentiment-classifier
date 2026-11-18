@@ -40,11 +40,62 @@ Aby całkowicie wyeliminować wyciek danych, wektoryzator jest dopasowywany wył
 
 ## 4. Rozwiązanie _(A · 10 pkt, B · 5 pkt)_
 
-> Co tu wpisać:
->
-> - schemat działania systemu (lista kroków albo diagram),
-> - opis algorytmu SI z jego podstawą matematyczną: wzór lub pojęcie z zajęć (np. funkcja oceny, gradient, entropia) i co oznacza w Waszym problemie,
-> - kluczowe parametry i ich wartości (np. rozmiar populacji, liczba epok, głębokość drzewa).
+Przepływ danych w systemie wygląda następująco:
+
+1. Zdanie wejściowe przetwarzane jest przez `TfidfVectorizer`.
+2. Wektor tekstowy trafia do trzech binarnych perceptronów.
+3. Każdy perceptron oblicza wynik dla jednej klasy i porównuje tę klasę z pozostałymi.
+4. Spośród wyników wybierana jest klasa o najwyższej wartości i zwracana jako odpowiedź.
+
+```text
+Tekst wiadomości
+      |
+      v
+TF-IDF: tekst -> wektor liczb
+      |
+      v
++-------------------------------+
+| negative vs. pozostałe klasy  |
+| neutral vs. pozostałe klasy   |   Wyniki pobudzenia
+| positive vs. pozostałe klasy  |
++---------------+---------------+
+                |
+                v
+          argmax(Z) -> jedna etykieta
+```
+
+Zaletą takiego układu jest to, że każdy perceptron koncentruje się tylko na jednym zadaniu: np. `negative` kontra zbiór pozostałych klas. Tekst reprezentujemy jako wektory TF-IDF. Wiersz `i` wektora odpowiada jednej wiadomości, a kolumna `j` jednej cechy tekstowej — pojedynczemu słowu lub dwuwyrazowej frazie.
+
+Dla klasy `k` perceptron oblicza surowe pobudzenie:
+
+```text
+Z(k, i) = w(k) · x(i) + b(k)
+```
+
+gdzie `x(i)` jest wektorem TF-IDF wiadomości, `w(k)` i `b(k)` oznaczają wagę cech i wyraz wolny tej klasy. Jeśli `Z(k, i) >= 0`, perceptron uznaje wiadomość za należącą do klasy `k`; w przeciwnym razie klasyfikuje ją jako jedną z pozostałych klas. Na końcu system wykonuje `argmax(Z)` i wybiera klasę o największym pobudzeniu.
+
+Podczas uczenia model sprawdza próbki w losowej kolejności. Gdy przewidywana klasa jest błędna, dokonuje następującej korekty wag:
+
+```text
+w := w + eta · y · x
+b := b + eta · y
+```
+
+Tutaj `eta` jest współczynnikiem uczenia, a `y` przyjmuje wartość `+1` dla odpowiedniej klasy i `-1` dla pozostałych. W modelu użyliśmy współczynnika uczenia `eta = 0.1`. Wariant bazowy trenowano przez maksymalnie 15 epok, bez uśredniania wag i bez specjalnego ważenia klas.
+
+Ostatnia wersja modelu została ulepszona dla danych z nierówną liczbą przykładów w klasach. Zastosowano:
+
+- TF-IDF dla unigramów i bigramów,
+- 5000 cech o najwyższej częstości w zbiorze uczącym,
+- `min_df = 2`, czyli pominięcie cech występujących tylko raz,
+- ważenie podliniowe TF przez `sublinear_tf=True`,
+- zachowanie słów kierunkowych, np. `up`, `down` i `not`,
+- 20 epok uczenia,
+- Averaged Perceptron — uśrednienie wag po krokach uczenia,
+- `class_weight="balanced"` — zwiększenie kroku dla klasy rzadkiej; mnożnik wynosi pierwiastek z liczby próbek innych klas podzielonej przez liczbę próbek tej klasy,
+- `random_state = 42` dla powtarzalnego podziału i tasowania próbek.
+
+Wektorizer dopasowano wyłącznie do 2758 zdań ze zbioru uczącego. Zbiór testowy przekształcono, ale nie użyto go ponownie do uczenia ani dobierania cech. Dzięki temu wyniki nie są obciążone wyciekiem danych ze zbioru testowego.
 
 ## 5. Ewaluacja _(B · 8 pkt)_
 
@@ -56,7 +107,11 @@ Aby całkowicie wyeliminować wyciek danych, wektoryzator jest dopasowywany wył
 
 ## 6. Wymagania niefunkcjonalne _(A · 5 pkt)_
 
-> Co tu wpisać: ile trwa działanie (na czym mierzone), co się dzieje przy złych lub brakujących danych, czy wyniki są powtarzalne (ziarno losowości).
+Cały potok (wektoryzacja TF-IDF + trening 3 perceptronów na 2 758 zdaniach + predykcja na 690 zdaniach) wykonuje się w całości na procesorze w czasie poniżej 1,5 sekundy (czas samego treningu ulepszonego perceptronu wynosi 0,95 s, a wariantu bazowego 0,68 s; predykcja całego zbioru testowego zajmuje poniżej 0,04 s).
+
+Metoda `_validate_and_convert_X` w `src/perceptron.py` sprawdza poprawność wymiarów macierzy wejściowej, odrzuca puste zbiory danych oraz automatycznie zastępuje ewentualne wartości `NaN` zerami (`np.nan_to_num`). Nieznane słowa w nowych nagłówkach są bezpiecznie ignorowane przez `TfidfVectorizer`.
+
+Wszystkie operacje losowe — zarówno podział zbioru na część uczącą i testową, jak i tasowanie próbek w każdej epoce uczenia korzystają z ustalonego ziarna losowości "42", co gwarantuje identyczne wyniki przy każdym uruchomieniu.
 
 ## 7. Ograniczenia _(E · 4 pkt)_
 
