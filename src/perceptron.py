@@ -1,16 +1,8 @@
-"""
-Moduł implementujący własny wieloklasowy klasyfikator oparty na trzech
-binarnych perceptronach w architekturze One-vs-Rest (OvR) przy użyciu NumPy.
-
-Zawiera:
-- podstawowy perceptron z wyborem klasy przez argmax(Z_k),
-- rozszerzenie Averaged Perceptron (uśrednianie wag po wszystkich krokach),
-- opcjonalne ważenie klas (class_weight="balanced") dla niezbalansowanego zbioru,
-- funkcję porównawczą z gotowym modelem sklearn.linear_model.Perceptron.
-"""
-
+import argparse
 from pathlib import Path
+import sys
 from time import perf_counter
+import tracemalloc
 from typing import Dict, Iterable, List, Optional, Tuple
 import numpy as np
 import pandas as pd
@@ -18,6 +10,22 @@ from scipy.sparse import issparse
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import Perceptron as SklearnPerceptron
 from sklearn.metrics import accuracy_score, f1_score
+
+
+REAL_WORLD_HEADLINES: List[str] = [
+    "Nvidia quarterly revenue surges 94% on strong AI data center demand",
+    "Boeing reports wider-than-expected net loss amid production delays and strikes",
+    "European Central Bank keeps interest rates unchanged at 3.25% as inflation cools",
+    "Apple announces $110 billion share buyback program and raises quarterly dividend",
+    "Volkswagen plans to close at least three factories in Germany and cut thousands of jobs",
+    "Microsoft completes annual shareholder meeting with board of directors re-elected",
+    "Tesla operating profit jumps as vehicle delivery costs fall to record low",
+    "Intel shares plunge after weak revenue forecast and suspension of dividend",
+    "JPMorgan Chase schedules fourth-quarter earnings conference call for January 15",
+    "Amazon operating income rises sharply driven by cloud computing growth",
+    "Credit Suisse faces heavy regulatory fine over compliance failures",
+    "Siemens Energy raises full-year profit outlook following strong grid orders",
+]
 
 
 class OneVsRestPerceptron:
@@ -51,7 +59,6 @@ class OneVsRestPerceptron:
         self.class_weight = class_weight
         self.random_state = random_state
 
-        # Atrybuty ustawiane podczas treningu (fit)
         self.classes_: Optional[np.ndarray] = None
         self.weights_: Optional[np.ndarray] = None
         self.biases_: Optional[np.ndarray] = None
@@ -112,12 +119,10 @@ class OneVsRestPerceptron:
             w = np.zeros(n_features, dtype=np.float64)
             b = 0.0
 
-            # Zmienne pomocnicze dla wariantu Averaged Perceptron
             w_sum = np.zeros(n_features, dtype=np.float64)
             b_sum = 0.0
             total_steps = 0
 
-            # Współczynnik kompensacji nierównowagi klas (łagodne pierwiastkowe skalowanie)
             if self.class_weight == "balanced":
                 n_pos = float(np.sum(y_binary == 1.0))
                 n_neg = float(np.sum(y_binary == -1.0))
@@ -227,7 +232,7 @@ def evaluate_sklearn_perceptron(
 ) -> Dict[str, float]:
     """
     Trenuje i ocenia referencyjny Perceptron z biblioteki scikit-learn
-    na tych samych cechach TF-IDF (punkt 9 karty tematu).
+    na tych samych cechach TF-IDF.
     """
     t0 = perf_counter()
     sk_clf = SklearnPerceptron(
@@ -248,65 +253,302 @@ def evaluate_sklearn_perceptron(
     }
 
 
+def classify_headlines(
+    vectorizer: TfidfVectorizer,
+    model: OneVsRestPerceptron,
+    headlines: Iterable[str],
+) -> pd.DataFrame:
+    """
+    Klasyfikuje listę zewnętrznych nagłówków finansowych i zwraca tabelę
+    z przewidywaną klasą oraz surowymi pobudzeniami Z_k.
+    """
+    headline_list = list(headlines)
+    X_vec = vectorizer.transform(headline_list)
+    preds = model.predict(X_vec)
+    scores = model.decision_function(X_vec)
+
+    rows = []
+    for idx, text in enumerate(headline_list):
+        row = {
+            "headline": text,
+            "predicted_sentiment": str(preds[idx]),
+        }
+        for cls_idx, cls_name in enumerate(model.classes_):
+            row[f"Z_{cls_name}"] = round(float(scores[idx, cls_idx]), 3)
+        rows.append(row)
+
+    return pd.DataFrame(rows)
+
+
+def benchmark_performance(
+    train_sentences: Iterable[str],
+    train_labels: Iterable[str],
+    test_sentences: Iterable[str],
+    n_runs: int = 5,
+) -> Dict[str, float]:
+    """
+    Mierzy wymagania niefunkcjonalne systemu na CPU:
+    - czas wektoryzacji TF-IDF oraz treningu modelu,
+    - czas inferencji dla całego zbioru testowego,
+    - średni czas odpowiedzi dla pojedynczego nagłówka,
+    - zużycie pamięci RAM podczas treningu i predykcji.
+    """
+    tr_sent = list(train_sentences)
+    tr_lbl = list(train_labels)
+    te_sent = list(test_sentences)
+
+    tracemalloc.start()
+
+    t_vec_start = perf_counter()
+    vec = TfidfVectorizer(
+        max_features=5000,
+        ngram_range=(1, 2),
+        min_df=2,
+        sublinear_tf=True,
+        stop_words=None,
+    )
+    X_tr = vec.fit_transform(tr_sent)
+    X_te = vec.transform(te_sent)
+    vec_time_sec = perf_counter() - t_vec_start
+
+    clf = OneVsRestPerceptron(
+        learning_rate=0.1,
+        n_epochs=20,
+        averaged=True,
+        class_weight="balanced",
+        random_state=42,
+    )
+    clf.fit(X_tr, tr_lbl)
+
+    pred_times = []
+    for _ in range(n_runs):
+        _ = clf.predict(X_te)
+        pred_times.append(clf.last_predict_time_sec_)
+    avg_batch_pred_sec = float(np.mean(pred_times))
+
+    single_times_ms = []
+    sample_headline = [te_sent[0]]
+    for _ in range(50):
+        t0 = perf_counter()
+        x_one = vec.transform(sample_headline)
+        _ = clf.predict(x_one)
+        single_times_ms.append((perf_counter() - t0) * 1000.0)
+    avg_single_ms = float(np.mean(single_times_ms))
+
+    _, peak_bytes = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+
+    return {
+        "tfidf_time_sec": round(vec_time_sec, 4),
+        "fit_time_sec": round(clf.train_time_sec_, 4),
+        "total_train_pipeline_sec": round(vec_time_sec + clf.train_time_sec_, 4),
+        "test_batch_predict_ms": round(avg_batch_pred_sec * 1000.0, 2),
+        "single_headline_latency_ms": round(avg_single_ms, 3),
+        "peak_memory_mb": round(peak_bytes / (1024 * 1024), 2),
+    }
+
+
+def predict_single_headline(
+    vectorizer: TfidfVectorizer,
+    model: OneVsRestPerceptron,
+    sentence: str,
+) -> None:
+    """
+    Klasyfikuje pojedynczy nagłówek wpisany przez użytkownika i wypisuje
+    przewidywaną klasę oraz surowe pobudzenia Z_k dla każdego z trzech perceptronów.
+    """
+    cleaned = sentence.strip()
+    if not cleaned:
+        print("Pusty tekst — podaj niepusty nagłówek w języku angielskim.")
+        return
+
+    X_custom = vectorizer.transform([cleaned])
+    pred_label = str(model.predict(X_custom)[0])
+    scores = model.decision_function(X_custom)[0]
+    scores_str = ", ".join(
+        f"{cls}: {val:.3f}" for cls, val in zip(model.classes_, scores)
+    )
+    print(f"Zdanie:     {cleaned}")
+    print(f"Predykcja:  {pred_label.upper()}")
+    print(f"Pobudzenia: [{scores_str}]")
+
+
+def interactive_headline_prompt(
+    vectorizer: TfidfVectorizer,
+    model: OneVsRestPerceptron,
+) -> None:
+    """
+    Uruchamia interaktywną pętlę w terminalu, pozwalającą wpisać własne
+    nagłówki finansowe na żywo (zakończenie: pusty Enter lub 'q').
+    """
+    if not (sys.stdin and sys.stdin.isatty()):
+        return
+
+    print("=== TRYB INTERAKTYWNY: SPRAWDŹ WŁASNY NAGŁÓWEK ===")
+    print("Wpisz nagłówek finansowy po angielsku (lub naciśnij Enter / wpisz 'q', aby zakończyć):")
+    while True:
+        try:
+            user_input = input("\n> ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\nZakończono tryb interaktywny.")
+            break
+
+        if not user_input or user_input.lower() in {"q", "quit", "exit"}:
+            print("Zakończono.")
+            break
+
+        predict_single_headline(vectorizer, model, user_input)
+
+
+def train_final_pipeline(
+    train_df: pd.DataFrame,
+) -> Tuple[TfidfVectorizer, OneVsRestPerceptron]:
+    vec_imp = TfidfVectorizer(
+        max_features=5000,
+        ngram_range=(1, 2),
+        min_df=2,
+        sublinear_tf=True,
+        stop_words=None,
+    )
+    X_tr_imp = vec_imp.fit_transform(train_df["sentence"])
+
+    clf_imp = OneVsRestPerceptron(
+        learning_rate=0.1,
+        n_epochs=20,
+        averaged=True,
+        class_weight="balanced",
+        random_state=42,
+    )
+    clf_imp.fit(X_tr_imp, train_df["label"])
+    return vec_imp, clf_imp
+
+
+def run_comparison(train_df: pd.DataFrame, test_df: pd.DataFrame) -> None:
+    vec_base = TfidfVectorizer(max_features=3000, ngram_range=(1, 2), stop_words="english")
+    X_tr_base = vec_base.fit_transform(train_df["sentence"])
+    X_te_base = vec_base.transform(test_df["sentence"])
+
+    clf_base = OneVsRestPerceptron(learning_rate=0.1, n_epochs=15, averaged=False, random_state=42)
+    clf_base.fit(X_tr_base, train_df["label"])
+    preds_base = clf_base.predict(X_te_base)
+
+    vec_imp, clf_imp = train_final_pipeline(train_df)
+    X_tr_imp = vec_imp.transform(train_df["sentence"])
+    X_te_imp = vec_imp.transform(test_df["sentence"])
+    preds_imp = clf_imp.predict(X_te_imp)
+
+    sk_res = evaluate_sklearn_perceptron(X_tr_imp, train_df["label"], X_te_imp, test_df["label"])
+
+    print("=== PORÓWNANIE WARIANTÓW PERCEPTRONU (ZBIÓR TESTOWY, N = 690) ===")
+    print(
+        f"1. Własny OneVsRestPerceptron (bazowy):    "
+        f"Accuracy = {accuracy_score(test_df['label'], preds_base) * 100:.2f}% | "
+        f"Macro-F1 = {f1_score(test_df['label'], preds_base, average='macro'):.4f} | "
+        f"Czas = {clf_base.train_time_sec_:.4f} s"
+    )
+    print(
+        f"2. Własny Averaged OvR + balanced:         "
+        f"Accuracy = {accuracy_score(test_df['label'], preds_imp) * 100:.2f}% | "
+        f"Macro-F1 = {f1_score(test_df['label'], preds_imp, average='macro'):.4f} | "
+        f"Czas = {clf_imp.train_time_sec_:.4f} s"
+    )
+    print(
+        f"3. Gotowy sklearn.linear_model.Perceptron: "
+        f"Accuracy = {sk_res['accuracy']:.2f}% | "
+        f"Macro-F1 = {sk_res['macro_f1']:.4f} | "
+        f"Czas = {sk_res['train_time_sec']:.4f} s"
+    )
+
+
+def run_real_headlines_test(vec_imp: TfidfVectorizer, clf_imp: OneVsRestPerceptron) -> None:
+    print("=== TEST NA RZECZYWISTYCH NAGŁÓWKACH RYNKOWYCH (N = 12) ===")
+    real_df = classify_headlines(vec_imp, clf_imp, REAL_WORLD_HEADLINES)
+    for _, row in real_df.iterrows():
+        print(f"[{row['predicted_sentiment'].upper():8s}] {row['headline']}")
+
+    balance = real_df["predicted_sentiment"].value_counts(normalize=True) * 100
+    balance_str = ", ".join(f"{k}: {v:.1f}%" for k, v in balance.items())
+    print(f"Ogólny bilans nastrojów: {balance_str}")
+
+
+def run_benchmark_report(train_df: pd.DataFrame, test_df: pd.DataFrame) -> None:
+    perf = benchmark_performance(
+        train_df["sentence"], train_df["label"], test_df["sentence"]
+    )
+    print("=== POMIAR WYMAGAN NIEFUNKCJONALNYCH (CPU) ===")
+    print(f"Wektoryzacja TF-IDF (train+test):    {perf['tfidf_time_sec']:.4f} s")
+    print(f"Trening 3 perceptronów (2758 zdań):  {perf['fit_time_sec']:.4f} s")
+    print(f"Predykcja całego testu (690 zdań):   {perf['test_batch_predict_ms']:.2f} ms")
+    print(f"Czas odpowiedzi na 1 nagłówek:       {perf['single_headline_latency_ms']:.3f} ms")
+    print(f"Szczytowe zużycie pamięci RAM:       {perf['peak_memory_mb']:.2f} MB")
+
+
+def parse_cli_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Klasyfikator sentymentu wiadomości finansowych (TF-IDF + OneVsRestPerceptron)."
+    )
+    parser.add_argument("--compare", action="store_true")
+    parser.add_argument("--real", action="store_true")
+    parser.add_argument("--benchmark", action="store_true")
+    parser.add_argument("-i", "--interactive", action="store_true")
+    parser.add_argument("--all", action="store_true")
+    parser.add_argument("headline", nargs="*")
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
+    args = parse_cli_args()
     train_path = Path("data/processed/train.csv")
     test_path = Path("data/processed/test.csv")
 
     if not train_path.exists() or not test_path.exists():
         print("Brak plików train.csv / test.csv. Uruchom najpierw 01_dane_i_eksploracja.ipynb.")
-    else:
-        train_df = pd.read_csv(train_path)
-        test_df = pd.read_csv(test_path)
+        sys.exit(1)
 
-        # 1. Wariant bazowy (z zachowaniem stop_words="english")
-        vec_base = TfidfVectorizer(max_features=3000, ngram_range=(1, 2), stop_words="english")
-        X_tr_base = vec_base.fit_transform(train_df["sentence"])
-        X_te_base = vec_base.transform(test_df["sentence"])
+    train_df = pd.read_csv(train_path)
+    test_df = pd.read_csv(test_path)
 
-        clf_base = OneVsRestPerceptron(learning_rate=0.1, n_epochs=15, averaged=False, random_state=42)
-        clf_base.fit(X_tr_base, train_df["label"])
-        preds_base = clf_base.predict(X_te_base)
+    if args.headline:
+        vec_imp, clf_imp = train_final_pipeline(train_df)
+        print("=== KLASYFIKACJA WŁASNEGO ZDANIA ===")
+        predict_single_headline(vec_imp, clf_imp, " ".join(args.headline))
+        sys.exit(0)
 
-        # 2. Wariant ulepszony: zachowanie słów kierunkowych (up/down/not) + Averaged Perceptron + balanced
-        vec_imp = TfidfVectorizer(
-            max_features=5000,
-            ngram_range=(1, 2),
-            min_df=2,
-            sublinear_tf=True,
-            stop_words=None,
-        )
-        X_tr_imp = vec_imp.fit_transform(train_df["sentence"])
-        X_te_imp = vec_imp.transform(test_df["sentence"])
+    no_flags = not (args.compare or args.real or args.benchmark or args.interactive or args.all)
+    do_compare = args.all or args.compare or no_flags
+    do_real = args.all or args.real
+    do_benchmark = args.all or args.benchmark
+    do_interactive = args.all or args.interactive
 
-        clf_imp = OneVsRestPerceptron(
-            learning_rate=0.1,
-            n_epochs=20,
-            averaged=True,
-            class_weight="balanced",
-            random_state=42,
-        )
-        clf_imp.fit(X_tr_imp, train_df["label"])
-        preds_imp = clf_imp.predict(X_te_imp)
+    sections_printed = 0
 
-        # 3. Referencyjny model z biblioteki scikit-learn
-        sk_res = evaluate_sklearn_perceptron(X_tr_imp, train_df["label"], X_te_imp, test_df["label"])
+    if do_compare:
+        run_comparison(train_df, test_df)
+        sections_printed += 1
 
-        print("=== PORÓWNANIE WARIANTÓW PERCEPTRONU (ZBIÓR TESTOWY, N = 690) ===")
-        print(
-            f"1. Własny OneVsRestPerceptron (bazowy):    "
-            f"Accuracy = {accuracy_score(test_df['label'], preds_base) * 100:.2f}% | "
-            f"Macro-F1 = {f1_score(test_df['label'], preds_base, average='macro'):.4f} | "
-            f"Czas = {clf_base.train_time_sec_:.4f} s"
-        )
-        print(
-            f"2. Własny Averaged OvR + balanced:         "
-            f"Accuracy = {accuracy_score(test_df['label'], preds_imp) * 100:.2f}% | "
-            f"Macro-F1 = {f1_score(test_df['label'], preds_imp, average='macro'):.4f} | "
-            f"Czas = {clf_imp.train_time_sec_:.4f} s"
-        )
-        print(
-            f"3. Gotowy sklearn.linear_model.Perceptron: "
-            f"Accuracy = {sk_res['accuracy']:.2f}% | "
-            f"Macro-F1 = {sk_res['macro_f1']:.4f} | "
-            f"Czas = {sk_res['train_time_sec']:.4f} s"
-        )
+    vec_imp: Optional[TfidfVectorizer] = None
+    clf_imp: Optional[OneVsRestPerceptron] = None
+
+    if do_real or do_interactive:
+        vec_imp, clf_imp = train_final_pipeline(train_df)
+
+    if do_real and vec_imp is not None and clf_imp is not None:
+        if sections_printed > 0:
+            print()
+        run_real_headlines_test(vec_imp, clf_imp)
+        sections_printed += 1
+
+    if do_benchmark:
+        if sections_printed > 0:
+            print()
+        run_benchmark_report(train_df, test_df)
+        sections_printed += 1
+
+    if do_interactive and vec_imp is not None and clf_imp is not None:
+        interactive_headline_prompt(vec_imp, clf_imp)
+
+# --compare     : porównuje wyniki własnego perceptronu z punktami odniesienia i modelem sklearn
+# --real        : testuje model na 12 rzeczywistych nagłówkach rynkowych
+# --benchmark   : mierzy wymagania niefunkcjonalne na CPU
+# --interactive | --i : uruchamia tryb interaktywny
+# --all         : uruchamia wszystkie powyższe tryby po kolei
