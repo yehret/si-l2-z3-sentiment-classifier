@@ -99,7 +99,7 @@ Wektorizer dopasowano wyłącznie do 2758 zdań ze zbioru uczącego. Zbiór test
 
 ## 5. Ewaluacja _(B · 8 pkt)_
 
-Wszystkie modele zostały ocenione na tym samym, zamrożonym zbiorze testowym (`data/processed/test.csv`, $N = 690$ zdań) przy użyciu trafności (`Accuracy`) oraz głównej miary dla danych niezbalansowanych (`Macro-F1`).
+Wszystkie modele zostały ocenione na tym samym, zamrożonym zbiorze testowym (`data/processed/test.csv`, N = 690 zdań) przy użyciu trafności (`Accuracy`) oraz głównej miary dla danych niezbalansowanych (`Macro-F1`).
 
 | Model                                                           | Accuracy (%) |  Macro-F1  |
 | :-------------------------------------------------------------- | :----------: | :--------: |
@@ -111,9 +111,11 @@ Wszystkie modele zostały ocenione na tym samym, zamrożonym zbiorze testowym (`
 
 **Wnioski z ewaluacji:**
 
-- Nasz podstawowy perceptron (`Model 3`) pokonał oba punkty odniesienia ($78{,}26\%$ vs $76{,}81\%$), ale zatrzymał się poniżej progu sukcesu ($82\%$ / $0{,}75$) przez usuwanie słów kierunkowych (_up_, _down_, _not_) oraz oscylacje wag na niezbalansowanym zbiorze.
-- Po zachowaniu słów kierunkowych w TF-IDF, dodaniu uśredniania wag (_Averaged Perceptron_) oraz ważenia klas (`Model 5`), trafność wzrosła o ponad $7$ punktów procentowych do **$85{,}36\%$**, a `Macro-F1` do **$0{,}7976$**.
-- Model wyraźnie przekroczył nasze kryterium sukcesu ($82\%$ Accuracy i $0{,}75$ Macro-F1) i uzyskał trafność nieznacznie wyższą niż gotowa implementacja `sklearn.linear_model.Perceptron` ($84{,}64\%$). Macierz pomyłek oraz krzywą błędów w epokach zapisano w `results/perceptron_cm.png`, a najważniejsze słowa dla każdej klasy w `results/perceptron_top_features.png`.
+Nasz podstawowy perceptron (Model 3) pokonał oba punkty odniesienia (78,26% vs 76,81%), ale zatrzymał się poniżej progu sukcesu (82% / 0,75) przez usuwanie słów kierunkowych (up, down, not) oraz oscylacje wag na niezbalansowanym zbiorze.
+
+Po zachowaniu słów kierunkowych w TF-IDF, dodaniu uśredniania wag (Averaged Perceptron) oraz ważenia klas (Model 5), trafność wzrosła o ponad 7 punktów procentowych do 85,36%, a Macro-F1 do 0,7976.
+
+Model wyraźnie przekroczył nasze kryterium sukcesu (82% Accuracy i 0,75 Macro-F1) i uzyskał trafność nieznacznie wyższą niż gotowa implementacja sklearn.linear_model.Perceptron (84,64%). Macierz pomyłek oraz krzywą błędów w epokach zapisano w results/perceptron_cm.png`, a najważniejsze słowa dla każdej klasy w `results/perceptron_top_features.png`.
 
 ## 6. Wymagania niefunkcjonalne _(A · 5 pkt)_
 
@@ -125,40 +127,118 @@ Wszystkie operacje losowe — zarówno podział zbioru na część uczącą i te
 
 ## 7. Ograniczenia _(E · 4 pkt)_
 
-Mimo wysokiej skuteczności ($85{,}36\%$), nasz klasyfikator liniowy oparty na reprezentacji worka słów (TF-IDF) błędnie klasyfikuje $101$ z $690$ zdań ze zbioru testowego. Wynika to z następujących ograniczeń technicznych:
+Mimo wysokiej skuteczności (85,36%), nasz klasyfikator liniowy oparty na reprezentacji worka słów (TF-IDF) błędnie klasyfikuje 101 z 690 zdań ze zbioru testowego. Wynika to z następujących ograniczeń technicznych:
 
-- **Brak pełnego zrozumienia składni i rzadszych czasowników:** Model ocenia obecność pojedynczych słów i bigramów, nie analizując struktury porównawczej zdania ani rzadszych synonimów spadku lub wzrostu.
-- **Wrażliwość na słowa o negatywnym zabarwieniu w kontekście neutralnym:** Informacje branżowe zawierające słowa kojarzone z zagrożeniem (np. o cyberatakach w raporcie firmy bezpieczeństwa) mogą zostać błędnie odebrane jako negatywne dla samej spółki.
-- **Przykłady błędnych klasyfikacji ze zbioru testowego:**
-  1. _„The company said that sales in the three months to the end of March slid to EUR86 .4 m US$ 113.4 m from EUR91 .2 m last year .”_ — prawdziwa klasa: `negative`, predykcja: `positive` ($Z = [\text{neg}: 0{,}013,\ \text{neu}: -0{,}171,\ \text{pos}: 0{,}057]$; rzadsze słowo _slid_ nie przeważyło nad neutralno-pozytywnym kontekstem sprzedaży).
-  2. _„F-Secure reported that : - The first half of 2008 has seen a growing number of targeted malware attacks on individuals , companies , and organizations .”_ — prawdziwa klasa: `neutral`, predykcja: `negative` ($Z = [\text{neg}: 0{,}078,\ \text{neu}: -0{,}054,\ \text{pos}: -0{,}071]$; słowa _malware_ i _attacks_ wywołały fałszywy alarm negatywny w czysto informacyjnym raporcie).
-  3. _„Fiskars , the World 's 1 Scissors Brand TM , recently won Learning -« Magazine 's 2011 Teachers ' Choice Award for the Classroom .”_ — prawdziwa klasa: `positive`, predykcja: `neutral` (sukces produktowy bez typowego słownictwa finansowego typu _profit_ czy _revenue_).
+Brak pełnego zrozumienia składni i rzadszych czasowników: Model ocenia obecność pojedynczych słów i bigramów, nie analizując struktury porównawczej zdania ani rzadszych synonimów spadku lub wzrostu.
 
-**Kierunki dalszego rozwoju:** Zastąpienie prostych wektorów TF-IDF gęstymi osadzeniami kontekstowymi (np. dostrojonym modelem językowym **FinBERT**) oraz rozbudowa zbioru o dodatkowe przykłady wiadomości negatywnych.
+Wrażliwość na słowa o negatywnym zabarwieniu w kontekście neutralnym: Informacje branżowe zawierające słowa kojarzone z zagrożeniem (np. o cyberatakach w raporcie firmy bezpieczeństwa) mogą zostać błędnie odebrane jako negatywne dla samej spółki.
+
+Przykłady błędnych klasyfikacji ze zbioru testowego:
+
+    „The company said that sales in the three months to the end of March slid to EUR86 .4 m US$ 113.4 m from EUR91 .2 m last year .” — prawdziwa klasa: negative, predykcja: positive (Z = [neg: 0,013, neu: -0,171, pos: 0,057]; rzadsze słowo slid nie przeważyło nad neutralno-pozytywnym kontekstem sprzedaży).
+
+    „F-Secure reported that : - The first half of 2008 has seen a growing number of targeted malware attacks on individuals , companies , and organizations .” — prawdziwa klasa: neutral, predykcja: negative (Z = [neg: 0,078, neu: -0,054, pos: -0,071]; słowa malware i attacks wywołały fałszywy alarm negatywny w czysto informacyjnym raporcie).
+
+    „Fiskars , the World 's 1 Scissors Brand TM , recently won Learning -« Magazine 's 2011 Teachers ' Choice Award for the Classroom .” — prawdziwa klasa: positive, predykcja: neutral (sukces produktowy bez typowego słownictwa finansowego typu profit czy revenue).
+
+Kierunki dalszego rozwoju: Zastąpienie prostych wektorów TF-IDF gęstymi osadzeniami kontekstowymi (np. dostrojonym modelem językowym FinBERT) oraz rozbudowa zbioru o dodatkowe przykłady wiadomości negatywnych.
 
 ## 8. Zastosowania w praktyce _(E · 4 pkt)_
 
-> Co tu wpisać: gdzie podobne rozwiązania są używane w branży (firma, produkt, dziedzina). Jeśli rozmawialiście z praktykiem — co powiedział i co zmieniliście.
+Automatyczna klasyfikacja sentymentu nagłówków finansowych znajduje bezpośrednie zastosowanie w narzędziach wspierających decyzje inwestycyjne i analizę ryzyka:
+
+- Automatyczne oznaczanie strumienia depesz rynkowych (np. Yahoo Finance) etykietami pozytywna / neutralna / negatywna
+- Filtrowanie dużej liczby komunikatów prasowych w celu natychmiastowego wychwycenia informacji o stratach finansowych, karach regulacyjnych lub obniżkach prognoz zysków
+- Szybka ocena wydźwięku komunikatów jako jedna z cech wejściowych w modelach wspomagających handel algorytmiczny
 
 ## 9. Zespół _(D · 8 pkt)_
 
-> Co tu wpisać: kto za co odpowiadał. Jeśli role się zmieniały — napiszcie kiedy i dlaczego. Wkład powinien zgadzać się z historią repozytorium.
-
-| Osoba | Za co odpowiadała |
-| ----- | ----------------- |
-| …     | …                 |
+| Osoba           | Za co odpowiadała                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| :-------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Serhii Samoliuk | Przygotowanie karty tematu i pierwotnego `README.md`, implementacja modeli bazowych, implementacja od zera wieloklasowego klasyfikatora `OneVsRestPerceptron` w NumPy wraz z uśrednianiem wag (_Averaged Perceptron_), kompensacją nierównowagi klas, porównaniem ze `scikit-learn`, testem na rzeczywistych nagłówkach, pomiarem wydajności CPU oraz trybem interaktywnym; opracowanie sekcji w dokumentacji oraz streszczenia technicznego po angielsku. |
+| Mariia Minakova | Pobranie, czyszczenie i eksploracja zbioru Financial PhraseBank, jednorazowy podział `train/test` ze stratyfikacją, ewaluacja punktów odniesienia, budowa notatnika ewaluacji modelu perceptronowego z wektoryzacją TF-IDF, wizualizacją macierzy pomyłek, wag cech oraz analizą błędów; opracowanie sekcji w dokumentacji, aktualizacja `README.md` wynikami końcowymi oraz przygotowanie prezentacji finałowej.                                          |
 
 ## 10. Uruchomienie _(C · 4 pkt)_
 
-> Co tu wpisać: kroki od sklonowania repozytorium do wyniku, tak żeby obca osoba dała radę bez pytania autorów: wymagania, instalacja, polecenie uruchomienia, gdzie pojawi się wynik.
+1. Sklonowanie repozytorium i instalacja zależności
 
 ```
-git clone <repozytorium>
-cd <katalog>
+git clone https://github.com/yehret/si-l2-z3-sentiment-classifier.git
+cd si-l2-z3-sentiment-classifier
+python -m venv venv
+# Windows (Git Bash):
+source venv/Scripts/activate
+# Windows (PowerShell): .\venv\Scripts\Activate | Linux/macOS: source venv/bin/activate
 pip install -r requirements.txt
-python <plik>.py
 ```
+
+2. Uruchomienie skryptów z terminala
+   Ocena punktów odniesienia (Baseline 1 i Baseline 2):
+
+```
+python src/baseline.py
+```
+
+3. Porównanie wariantów perceptronu ze scikit-learn (tryb domyślny):
+
+```
+python src/perceptron.py --compare
+```
+
+4. Test na 12 rzeczywistych nagłówkach rynkowych i bilans nastrojów:
+
+```
+python src/perceptron.py --real
+```
+
+5. Pomiar wymagań niefunkcjonalnych na CPU (czas treningu, opóźnienie 1 zdania, RAM):
+
+```
+python src/perceptron.py --benchmark
+```
+
+6. Tryb interaktywny (wpisywanie własnych nagłówków na żywo) lub pełny raport:
+
+```
+python src/perceptron.py --interactive
+python src/perceptron.py --all
+```
+
+Szybka klasyfikacja pojedynczego nagłówka przekazanego jako argument:
+
+```
+python src/perceptron.py "Nvidia quarterly revenue surges 94% on strong AI demand"
+```
+
+(czas treningu, opóźnienie 1 zdania, RAM):
+
+python src/perceptron.py --benchmark
+
+Tryb interaktywny (wpisywanie własnych nagłówków na żywo) lub pełny raport:
+
+python src/perceptron.py --interactive
+python src/perceptron.py --all
+
+Szybka klasyfikacja pojedynczego nagłówka przekazanego jako argument:
+
+python src/perceptron.py "Nvidia quarterly revenue surges 94% on strong AI demand"
+
+3. Uruchomienie notatników Jupyter
+
+Otworzyć kolejno w VS Code lub Jupyter Notebook:
+
+notebooks/01_dane_i_eksploracja.ipynb — czyszczenie danych i podział 80/20,
+
+notebooks/02_punkt_odniesienia.ipynb — ocena modeli bazowych,
+
+notebooks/03_model_perceptron.ipynb — pełna ewaluacja perceptronu, wykresy, analiza błędów i test na nagłówkach rynkowych.
+
+Wybrać kernel Python ze środowiska venv i kliknąć Run All.
 
 ## 11. Narzędzia AI
 
-> Co tu wpisać: czy korzystaliście z narzędzi AI (np. ChatGPT, Claude, Copilot) i do czego — kod, tekst, debugowanie. Jeśli nie — napiszcie „nie korzystaliśmy”. Pamiętajcie: każdą linię kodu musicie umieć wyjaśnić na obronie.
+Podczas realizacji projektu korzystaliśmy ze wsparcia narzędzi opartych na dużych modelach językowych (Gemini) jako asystenta programistycznego i redakcyjnego:
+
+Zakres użycia: pomoc przy projektowaniu struktury modułów w Pythonie, debugowaniu problemów ze ścieżkami i wektoryzacją macierzy rzadkich scipy.sparse, dopracowaniu formatowania wykresów matplotlib/seaborn oraz korekcie językowej dokumentacji w języku polskim i angielskim.
+
+Weryfikacja przez zespół: cały kod w src/ i notebooks/ został przez nas samodzielnie uruchomiony, przetestowany na zbiorze danych, a wszystkie wyniki liczbowe, wykresy oraz interpretacje merytoryczne zostały zweryfikowane przez członków zespołu.
